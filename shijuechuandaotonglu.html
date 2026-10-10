@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视觉传导通路损伤模拟器 - 解剖学教学工具</title>
+  <!-- Tailwind CSS v3 -->
+   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#60a5fa',
+            accent: '#2563eb',
+            neutral: '#f1f5f9',
+            'neutral-dark': '#94a3b8',
+            'text-primary': '#1e293b',
+            'text-secondary': '#64748b',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .pathway-highlight {
+        filter: drop-shadow(0 0 8px theme('colors.accent'));
+      }
+      .视野-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 50%;
+        background: radial-gradient(circle at center, #f8fafc, #e2e8f0);
+      }
+      .视野-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        transition: opacity 0.5s ease;
+      }
+      .损伤点 {
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+      .损伤点:hover {
+        transform: scale(1.2);
+      }
+      .信息卡片 {
+        transition: all 0.3s ease;
+      }
+      .信息卡片:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-text-primary min-h-screen">
+  <header class="bg-white shadow-md">
+    <div class="container mx-auto px-4 py-6">
+      <h1 class="text-3xl font-bold text-center text-primary">视觉传导通路损伤模拟器</h1>
+      <p class="text-center text-text-secondary mt-2">交互式解剖学教学工具 - 探索不同部位损伤对视力的影响</p>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- 左侧：视觉传导通路图谱 -->
+      <div class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center">
+          <i class="fa fa-eye mr-2 text-primary"></i>视觉传导通路图谱
+        </h2>
+        <div class="relative">
+          <!-- 使用参考图替代Canvas -->
+          <img src="https://bkimg.cdn.bcebos.com/pic/d000baa1cd11728b85bbb906ccfcc3cec3fd2c7b" 
+               alt="视觉传导通路图" 
+               class="w-full border border-gray-200 rounded-lg bg-white" 
+               id="pathwayImage">
+          
+          <!-- 交互热点区域 -->
+          <div id="hotspots" class="absolute top-0 left-0 w-full h-full">
+            <!-- 热点区域将通过JavaScript动态添加 -->
+          </div>
+          
+  
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-text-secondary">
+          <p>提示：点击图中高亮区域模拟不同部位的损伤，右侧将显示相应的视野缺损情况。</p>
+        </div>
+      </div>
+
+      <!-- 右侧：视野模拟和控制面板 -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center">
+          <i class="fa fa-area-chart mr-2 text-primary"></i>视野模拟
+        </h2>
+        
+        <!-- 视野显示区域 -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <h3 class="text-center text-sm font-medium mb-2">左眼视野</h3>
+            <div class="视野-container mx-auto" style="width: 150px; height: 150px;">
+              <div id="leftEyeView" class="视野-overlay"></div>
+              <img src="https://p26-doubao-search-sign.byteimg.com/labis/f187e2a6fb7fd40c4a90a75310266ec8~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1765724484&x-signature=PX7qPAixjidnC%2FEczEV3xSJ8Tdk%3D" 
+                   alt="左眼视野" class="w-full h-full object-cover">
+            </div>
+          </div>
+          <div>
+            <h3 class="text-center text-sm font-medium mb-2">右眼视野</h3>
+            <div class="视野-container mx-auto" style="width: 150px; height: 150px;">
+              <div id="rightEyeView" class="视野-overlay"></div>
+              <img src="https://p26-doubao-search-sign.byteimg.com/labis/f187e2a6fb7fd40c4a90a75310266ec8~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1765724484&x-signature=PX7qPAixjidnC%2FEczEV3xSJ8Tdk%3D" 
+                   alt="右眼视野" class="w-full h-full object-cover">
+            </div>
+          </div>
+        </div>
+        
+        <!-- 控制面板 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">控制面板</h3>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button id="resetBtn" class="px-3 py-2 bg-primary text-white rounded-md hover:bg-accent transition-colors flex items-center">
+              <i class="fa fa-refresh mr-1"></i> 重置
+            </button>
+            <button id="animateBtn" class="px-3 py-2 bg-secondary text-white rounded-md hover:bg-accent transition-colors flex items-center">
+              <i class="fa fa-play mr-1"></i> 动画演示
+            </button>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">选择损伤部位：</label>
+            <select id="lesionSelect" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary">
+              <option value="none">-- 请选择损伤部位 --</option>
+              <option value="leftOpticNerve">左侧视神经</option>
+              <option value="rightOpticNerve">右侧视神经</option>
+              <option value="opticChiasmCenter">视交叉中央部</option>
+              <option value="opticChiasmLeft">视交叉左侧部</option>
+              <option value="opticChiasmRight">视交叉右侧部</option>
+              <option value="leftOpticTract">左侧视束</option>
+              <option value="rightOpticTract">右侧视束</option>
+              <option value="leftOpticRadiation">左侧视辐射</option>
+              <option value="rightOpticRadiation">右侧视辐射</option>
+              <option value="leftVisualCortex">左侧视觉中枢</option>
+              <option value="rightVisualCortex">右侧视觉中枢</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- 解剖学解释 -->
+        <div id="explanationCard" class="信息卡片 bg-neutral rounded-lg p-4">
+          <h3 class="text-lg font-medium mb-2 flex items-center">
+            <i class="fa fa-info-circle mr-2 text-primary"></i>解剖学解释
+          </h3>
+          <div id="explanationContent" class="text-sm">
+            <p class="text-text-secondary italic">请点击左侧图谱或从下拉菜单选择一个损伤部位查看详细解释。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 临床意义说明 -->
+    <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-xl font-semibold mb-4 flex items-center">
+        <i class="fa fa-stethoscope mr-2 text-primary"></i>临床意义
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-lg font-medium mb-2">视野缺损与病变定位</h3>
+          <p class="text-text-secondary mb-3">
+            视觉传导通路不同部位的损伤会导致特征性的视野缺损，这对于神经系统疾病的定位诊断具有重要意义。
+            通过分析视野缺损的类型，医生可以推断病变可能存在的位置。
+          </p>
+          <ul class="list-disc list-inside text-text-secondary space-y-1">
+            <li>视神经损伤：单侧视力下降或全盲</li>
+            <li>视交叉损伤：双颞侧偏盲（垂体瘤典型表现）</li>
+            <li>视束损伤：双眼对侧视野同向性偏盲</li>
+            <li>视辐射损伤：象限盲（如颞叶损伤致上象限盲）</li>
+            <li>视觉中枢损伤：对侧同向性偏盲伴黄斑回避</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-2">常见病因</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-neutral rounded-lg p-3">
+              <h4 class="font-medium text-sm mb-1">视神经病变</h4>
+              <p class="text-xs text-text-secondary">视神经炎、青光眼、视神经萎缩、压迫性病变</p>
+            </div>
+            <div class="bg-neutral rounded-lg p-3">
+              <h4 class="font-medium text-sm mb-1">视交叉病变</h4>
+              <p class="text-xs text-text-secondary">垂体瘤、颅咽管瘤、脑膜瘤、动脉瘤</p>
+            </div>
+            <div class="bg-neutral rounded-lg p-3">
+              <h4 class="font-medium text-sm mb-1">视束病变</h4>
+              <p class="text-xs text-text-secondary">肿瘤压迫、脑血管疾病、脱髓鞘疾病</p>
+            </div>
+            <div class="bg-neutral rounded-lg p-3">
+              <h4 class="font-medium text-sm mb-1">视觉中枢病变</h4>
+              <p class="text-xs text-text-secondary">脑梗死、脑出血、脑肿瘤、脑外伤</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-gray-100 border-t border-gray-200 mt-12">
+    <div class="container mx-auto px-4 py-6">
+      <p class="text-center text-text-secondary text-sm">
+        © 2025 视觉传导通路损伤模拟器 - 解剖学教学工具 | 专为医学院教师和学生设计
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // 定义视觉传导通路各部位的损伤信息
+    const lesionInfo = {
+      none: {
+        name: "无损伤",
+        leftEyeDefect: "none",
+        rightEyeDefect: "none",
+        explanation: "当前未模拟任何损伤。请点击左侧图谱或从下拉菜单选择一个损伤部位查看相应的视野缺损情况。"
+      },
+      leftOpticNerve: {
+        name: "左侧视神经损伤",
+        leftEyeDefect: "total",
+        rightEyeDefect: "none",
+        explanation: "左侧视神经完全损伤导致左眼全盲。由于来自左眼的所有视觉信息都无法传递到大脑，因此左眼视野完全丧失。右眼视野不受影响，因为其视神经完好无损。常见于视神经炎、视神经外伤或肿瘤压迫。"
+      },
+      rightOpticNerve: {
+        name: "右侧视神经损伤",
+        leftEyeDefect: "none",
+        rightEyeDefect: "total",
+        explanation: "右侧视神经完全损伤导致右眼全盲。由于来自右眼的所有视觉信息都无法传递到大脑，因此右眼视野完全丧失。左眼视野不受影响，因为其视神经完好无损。常见于视神经炎、视神经外伤或肿瘤压迫。"
+      },
+      opticChiasmCenter: {
+        name: "视交叉中央部损伤",
+        leftEyeDefect: "nasal",
+        rightEyeDefect: "temporal",
+        explanation: "视交叉中央部损伤导致双眼颞侧偏盲。这是因为视交叉中央部是双眼鼻侧视网膜纤维交叉的部位，损伤后这些纤维无法传递信息。因此，双眼都无法看到颞侧（外侧）的物体。这种视野缺损常见于垂体瘤压迫视交叉。"
+      },
+      opticChiasmLeft: {
+        name: "视交叉左侧部损伤",
+        leftEyeDefect: "temporal",
+        rightEyeDefect: "none",
+        explanation: "视交叉左侧部损伤导致左眼鼻侧偏盲。这是因为视交叉左侧部包含左眼鼻侧视网膜的交叉纤维，损伤后这些纤维无法传递信息。因此，左眼无法看到鼻侧（内侧）的物体，而右眼视野不受影响。常见于颈内动脉严重硬化压迫视交叉外侧部。"
+      },
+      opticChiasmRight: {
+        name: "视交叉右侧部损伤",
+        leftEyeDefect: "none",
+        rightEyeDefect: "nasal",
+        explanation: "视交叉右侧部损伤导致右眼鼻侧偏盲。这是因为视交叉右侧部包含右眼鼻侧视网膜的交叉纤维，损伤后这些纤维无法传递信息。因此，右眼无法看到鼻侧（内侧）的物体，而左眼视野不受影响。常见于颈内动脉严重硬化压迫视交叉外侧部。"
+      },
+      leftOpticTract: {
+        name: "左侧视束损伤",
+        leftEyeDefect: "temporal",
+        rightEyeDefect: "temporal",
+        explanation: "左侧视束损伤导致双眼对侧视野同向性偏盲（右侧同向性偏盲）。这是因为左侧视束包含来自左眼鼻侧视网膜和右眼颞侧视网膜的纤维，这些纤维传递的是右侧视野的信息。损伤后，双眼都无法看到右侧的物体。常见于颞叶肿瘤向内侧压迫或脑血管疾病。"
+      },
+      rightOpticTract: {
+        name: "右侧视束损伤",
+        leftEyeDefect: "nasal",
+        rightEyeDefect: "nasal",
+        explanation: "右侧视束损伤导致双眼对侧视野同向性偏盲（左侧同向性偏盲）。这是因为右侧视束包含来自右眼鼻侧视网膜和左眼颞侧视网膜的纤维，这些纤维传递的是左侧视野的信息。损伤后，双眼都无法看到左侧的物体。常见于颞叶肿瘤向内侧压迫或脑血管疾病。"
+      },
+      leftOpticRadiation: {
+        name: "左侧视辐射损伤",
+        leftEyeDefect: "temporal",
+        rightEyeDefect: "temporal",
+        explanation: "左侧视辐射损伤导致双眼对侧视野同向性偏盲（右侧同向性偏盲）。视辐射是从外侧膝状体到视觉皮层的神经纤维束。左侧视辐射损伤会影响右侧视野信息的传递。如果损伤位于视辐射下部（颞叶），可能出现右上象限盲；如果损伤位于上部（顶叶），可能出现右下象限盲。常见于脑血管疾病、脑肿瘤或脑外伤。"
+      },
+      rightOpticRadiation: {
+        name: "右侧视辐射损伤",
+        leftEyeDefect: "nasal",
+        rightEyeDefect: "nasal",
+        explanation: "右侧视辐射损伤导致双眼对侧视野同向性偏盲（左侧同向性偏盲）。视辐射是从外侧膝状体到视觉皮层的神经纤维束。右侧视辐射损伤会影响左侧视野信息的传递。如果损伤位于视辐射下部（颞叶），可能出现左上象限盲；如果损伤位于上部（顶叶），可能出现左下象限盲。常见于脑血管疾病、脑肿瘤或脑外伤。"
+      },
+      leftVisualCortex: {
+        name: "左侧视觉中枢损伤",
+        leftEyeDefect: "temporal",
+        rightEyeDefect: "temporal",
+        explanation: "左侧视觉中枢损伤导致双眼对侧视野同向性偏盲（右侧同向性偏盲），常伴有黄斑回避现象（中央视野保留）。视觉中枢位于大脑枕叶，左侧视觉中枢负责处理右侧视野的信息。黄斑回避现象可能是因为黄斑区的神经纤维在视觉中枢有双侧投射，或者是因为大脑存在代偿机制。常见于枕叶脑梗死、脑出血或脑肿瘤。"
+      },
+      rightVisualCortex: {
+        name: "右侧视觉中枢损伤",
+        leftEyeDefect: "nasal",
+        rightEyeDefect: "nasal",
+        explanation: "右侧视觉中枢损伤导致双眼对侧视野同向性偏盲（左侧同向性偏盲），常伴有黄斑回避现象（中央视野保留）。视觉中枢位于大脑枕叶，右侧视觉中枢负责处理左侧视野的信息。黄斑回避现象可能是因为黄斑区的神经纤维在视觉中枢有双侧投射，或者是因为大脑存在代偿机制。常见于枕叶脑梗死、脑出血或脑肿瘤。"
+      }
+    };
+
+    // 定义视野缺损的样式
+    const defectStyles = {
+      none: {
+        opacity: 0,
+        clipPath: "none"
+      },
+      total: {
+        opacity: 0.7,
+        clipPath: "circle(100% at center)"
+      },
+      nasal: {
+        opacity: 0.7,
+        clipPath: "inset(0 50% 0 0)"
+      },
+      temporal: {
+        opacity: 0.7,
+        clipPath: "inset(0 0 0 50%)"
+      },
+      upper: {
+        opacity: 0.7,
+        clipPath: "inset(0 0 50% 0)"
+      },
+      lower: {
+        opacity: 0.7,
+        clipPath: "inset(50% 0 0 0)"
+      }
+    };
+
+    // 获取DOM元素
+    const leftEyeView = document.getElementById('leftEyeView');
+    const rightEyeView = document.getElementById('rightEyeView');
+    const explanationContent = document.getElementById('explanationContent');
+    const lesionSelect = document.getElementById('lesionSelect');
+    const resetBtn = document.getElementById('resetBtn');
+    const animateBtn = document.getElementById('animateBtn');
+
+    // 设置图像尺寸并添加交互热点
+    function setupPathwayImage() {
+      const pathwayImage = document.getElementById('pathwayImage');
+      const hotspotsContainer = document.getElementById('hotspots');
+      
+      // 清除现有热点
+      hotspotsContainer.innerHTML = '';
+      
+      // 定义热点区域（相对于图片的百分比位置）
+      const hotspots = [
+        { id: 'leftOpticNerve', x: 28, y: 25, width: 8, height: 12, shape: 'rect' },
+        { id: 'rightOpticNerve', x: 40, y: 25, width: 8, height: 12, shape: 'rect' },
+        { id: 'opticChiasmCenter', x: 35, y: 35, width: 10, height: 10, shape: 'circle' },
+        { id: 'opticChiasmLeft', x: 34, y: 35, width: 4, height: 6, shape: 'circle' },
+        { id: 'opticChiasmRight', x: 40, y: 35, width: 4, height: 6, shape: 'circle' },
+        { id: 'leftOpticTract', x: 30, y: 38, width: 8, height: 10, shape: 'rect' },
+        { id: 'rightOpticTract', x: 40, y: 38, width: 8, height: 10, shape: 'rect' },
+        { id: 'leftOpticRadiation', x: 22, y: 60, width: 15, height: 20, shape: 'rect' },
+        { id: 'rightOpticRadiation', x: 45, y: 60, width: 15, height: 20, shape: 'rect' },
+        { id: 'leftVisualCortex', x: 35, y: 80, width: 6, height: 6, shape: 'circle' },
+        { id: 'rightVisualCortex', x: 40, y: 80, width: 6, height: 6, shape: 'circle' }
+      ];
+      
+      // 创建热点元素
+      hotspots.forEach(spot => {
+        const hotspot = document.createElement('div');
+        hotspot.id = spot.id;
+        hotspot.className = '损伤点 absolute';
+        
+        // 设置热点位置和大小（使用百分比）
+        hotspot.style.left = `${spot.x}%`;
+        hotspot.style.top = `${spot.y}%`;
+        
+        if (spot.shape === 'circle') {
+          hotspot.style.width = `${spot.width}%`;
+          hotspot.style.height = `${spot.height}%`;
+          hotspot.style.borderRadius = '50%';
+        } else {
+          hotspot.style.width = `${spot.width}%`;
+          hotspot.style.height = `${spot.height}%`;
+        }
+        
+        hotspot.style.zIndex = '10';
+        hotspot.addEventListener('click', () => simulateLesion(spot.id));
+        
+        hotspotsContainer.appendChild(hotspot);
+      });
+    }
+
+    // 模拟损伤
+    function simulateLesion(lesionId) {
+      // 更新下拉菜单
+      lesionSelect.value = lesionId;
+      
+      // 获取损伤信息
+      const lesion = lesionInfo[lesionId];
+      
+      // 更新视野缺损
+      updateVisualFieldDefect(leftEyeView, lesion.leftEyeDefect);
+      updateVisualFieldDefect(rightEyeView, lesion.rightEyeDefect);
+      
+      // 更新解释内容
+      explanationContent.innerHTML = `<h4 class="font-medium mb-2">${lesion.name}</h4><p>${lesion.explanation}</p>`;
+      
+      // 高亮显示损伤部位
+      highlightLesion(lesionId);
+    }
+
+    // 更新视野缺损
+    function updateVisualFieldDefect(element, defectType) {
+      const style = defectStyles[defectType] || defectStyles.none;
+      element.style.opacity = style.opacity;
+      element.style.clipPath = style.clipPath;
+    }
+
+    // 高亮显示损伤部位
+    function highlightLesion(lesionId) {
+      // 移除所有高亮
+      document.querySelectorAll('.损伤点').forEach(point => {
+        point.style.boxShadow = 'none';
+      });
+      
+      // 添加当前损伤点高亮
+      const lesionPoint = document.getElementById(lesionId);
+      if (lesionPoint) {
+        lesionPoint.style.boxShadow = '0 0 0 4px rgba(255, 71, 87, 0.5)';
+      }
+    }
+
+    // 重置模拟器
+    function resetSimulator() {
+      simulateLesion('none');
+    }
+
+    // 动画演示
+    function animateDemo() {
+      const lesions = [
+        'leftOpticNerve',
+        'opticChiasmCenter',
+        'leftOpticTract',
+        'leftVisualCortex',
+        'none'
+      ];
+      
+      let index = 0;
+      const interval = setInterval(() => {
+        simulateLesion(lesions[index]);
+        index++;
+        
+        if (index >= lesions.length) {
+          clearInterval(interval);
+        }
+      }, 3000);
+    }
+
+    // 事件监听
+    window.addEventListener('load', setupPathwayImage);
+    window.addEventListener('resize', setupPathwayImage);
+    resetBtn.addEventListener('click', resetSimulator);
+    animateBtn.addEventListener('click', animateDemo);
+    lesionSelect.addEventListener('change', (e) => simulateLesion(e.target.value));
+
+    // 初始化
+    setupPathwayImage();
+    resetSimulator();
+  </script>
+</body>
+</html>
